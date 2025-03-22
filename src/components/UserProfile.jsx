@@ -1,13 +1,9 @@
 const UserProfile = ({ user, logoutHandler }) => {
   return (
-    <>
-      <p>
-        Welcome {user.name} -{' '}
-        <span>
-          <button onClick={logoutHandler}>Logout</button>
-        </span>
-      </p>
-    </>
+    <div className='user-profile'>
+      <span>Logged in as {user.name}</span>
+      <button onClick={logoutHandler}>Logout</button>
+    </div>
   );
 };
 

@@ -1,16 +1,26 @@
-const AddBlogForm = ({
-  blogTitle,
-  blogAuthor,
-  blogUrl,
-  setBlogTitle,
-  setBlogAuthor,
-  setBlogUrl,
-  addBlogHandler,
-}) => {
+import React, { useState } from 'react';
+
+const AddBlogForm = ({ onAddBlog }) => {
+  const [blogTitle, setBlogTitle] = useState('');
+  const [blogAuthor, setBlogAuthor] = useState('');
+  const [blogUrl, setBlogUrl] = useState('');
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    onAddBlog({
+      title: blogTitle,
+      author: blogAuthor,
+      url: blogUrl,
+    });
+    setBlogTitle('');
+    setBlogAuthor('');
+    setBlogUrl('');
+  };
+
   return (
     <>
       <h2>Add a new blog</h2>
-      <form onSubmit={addBlogHandler}>
+      <form onSubmit={handleSubmit}>
         <div>
           <label htmlFor='title'>Title:</label>
           <input

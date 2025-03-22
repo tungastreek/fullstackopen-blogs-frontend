@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Blog from './components/Blog';
 import LoginForm from './components/LoginForm';
 import blogService from './services/blogs';
 import loginService from './services/login';
 import UserProfile from './components/UserProfile';
 import AddBlogForm from './components/AddBlogForm';
+import Togglable from './components/utils/Togglable';
 
 function App() {
   /*
@@ -16,13 +17,13 @@ function App() {
    * States
    */
   const [blogs, setBlogs] = useState([]);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [user, setUser] = useState(null);
-  const [blogTitle, setBlogTitle] = useState('');
-  const [blogAuthor, setBlogAuthor] = useState('');
-  const [blogUrl, setBlogUrl] = useState('');
   const [message, setMessage] = useState(null);
+
+  /*
+   * References
+   */
+  const blogFormRef = useRef();
 
   /*
    * Effects
@@ -62,8 +63,7 @@ function App() {
   /*
    * Event Handlers
    */
-  const loginHandler = async (event) => {
-    event.preventDefault();
+  const loginHandler = async (username, password) => {
     try {
       const user = await loginService.login({ username, password });
       setUser(user);
@@ -73,8 +73,6 @@ function App() {
     } catch (error) {
       showMessage(`Logged in unsuccessfully: ${error.response.data.error}`, 'error');
     }
-    setUsername('');
-    setPassword('');
   };
 
   const logoutHandler = () => {
@@ -84,59 +82,66 @@ function App() {
     showMessage('Logged out successfully', 'success');
   };
 
-  const addBlogHandler = async (event) => {
-    event.preventDefault();
+  const likeBlogHandler = async (blog) => {
     try {
-      const newBlog = {
-        title: blogTitle,
-        author: blogAuthor,
-        url: blogUrl,
-      };
+      const updatedBlog = await blogService.like(blog.id);
+      setBlogs(blogs.map((b) => (b.id === updatedBlog.id ? updatedBlog : b)));
+      showMessage(`You liked ${updatedBlog.title} by ${updatedBlog.author}`, 'success');
+    } catch (error) {
+      showMessage(`Failed to like blog: ${error.response.data.error}`, 'error');
+    }
+  };
+
+  const addBlogHandler = async (newBlog) => {
+    try {
       const createdBlog = await blogService.create(newBlog);
       setBlogs(blogs.concat(createdBlog));
       showMessage(`Blog ${createdBlog.title} by ${createdBlog.author} added`, 'success');
+      blogFormRef.current.toggleVisibility();
     } catch (error) {
       showMessage(`Failed to add blog: ${error.response.data.error}`, 'error');
     }
-    setBlogTitle('');
-    setBlogAuthor('');
-    setBlogUrl('');
+  };
+
+  const deleteBlogHandler = async (blog) => {
+    if (window.confirm(`Are you sure you want to delete ${blog.title} by ${blog.author}?`)) {
+      try {
+        await blogService.remove(blog.id);
+        setBlogs(blogs.filter((b) => b.id !== blog.id));
+        showMessage(`Blog ${blog.title} by ${blog.author} deleted`, 'success');
+      } catch (error) {
+        showMessage(`Failed to delete blog: ${error.response.data.error}`, 'error');
+      }
+    }
   };
 
   /*
    * Render the component
    */
+  const sortedBlogs = [...blogs].sort((a, b) => b.likes - a.likes);
   return (
     <>
       <h1>Blogs Application</h1>
       {message && <div className={`notification ${message.type}`}>{message.text}</div>}
-      {!user && (
-        <LoginForm
-          onLoginFormSubmit={loginHandler}
-          username={username}
-          password={password}
-          setUsername={setUsername}
-          setPassword={setPassword}
-        />
-      )}
+      {!user && <LoginForm onLoginFormSubmit={loginHandler} />}
       {user && (
         <>
           <UserProfile user={user} logoutHandler={logoutHandler} />
+          <Togglable buttonLabel='Add new blog' ref={blogFormRef}>
+            <AddBlogForm onAddBlog={addBlogHandler} />
+          </Togglable>
           <h2>List of blogs</h2>
-          <ul>
-            {blogs.map((blog) => (
-              <Blog key={blog.id} blog={blog} />
+          <div className='blogs-container'>
+            {sortedBlogs.map((blog) => (
+              <Blog
+                key={blog.id}
+                blog={blog}
+                likeBlogHandler={likeBlogHandler}
+                deleteBlogHandler={deleteBlogHandler}
+                currentUser={user}
+              />
             ))}
-          </ul>
-          <AddBlogForm
-            blogTitle={blogTitle}
-            blogAuthor={blogAuthor}
-            blogUrl={blogUrl}
-            setBlogAuthor={setBlogAuthor}
-            setBlogTitle={setBlogTitle}
-            setBlogUrl={setBlogUrl}
-            addBlogHandler={addBlogHandler}
-          />
+          </div>
         </>
       )}
     </>

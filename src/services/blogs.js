@@ -22,4 +22,19 @@ const create = async (newBlog) => {
   return response.data;
 };
 
-export default { setAuthHeader, getAll, create };
+const update = async (id, newBlog) => {
+  const response = await axios.put(`${baseUrl}/${id}`, newBlog, configs);
+  return response.data;
+};
+
+const like = async (id) => {
+  const response = await axios.put(`${baseUrl}/${id}/like`, {}, configs);
+  return response.data;
+};
+
+const remove = async (id) => {
+  const response = await axios.delete(`${baseUrl}/${id}`, configs);
+  return response.data;
+};
+
+export default { setAuthHeader, getAll, create, update, like, remove };
